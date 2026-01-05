@@ -78,8 +78,8 @@
 ### Kritik Makaleler (Direkt Kullanıyoruz)
 
 #### 1. PPO Agent Implementasyonu
-> **Chelarescu, P. A. (2022).** A deep reinforcement learning agent for general video game AI framework games. *IEEE Conference on Games*.
-> DOI: https://doi.org/10.1109/CoG51982.2022.9844524
+> **Chelarescu, P. A. (2022).** A deep reinforcement learning agent for general video game AI framework games. *IEEE ICAICA*.
+> DOI: https://doi.org/10.1109/ICAICA54878.2022.9844524
 >
 > **Kullanım:** PPO algoritması implementasyonu ve hyperparameter seçimi
 
