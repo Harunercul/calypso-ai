@@ -314,6 +314,64 @@ rewards = {
 
 ---
 
+## Geliştirme Yol Haritası
+
+### Mevcut Durum (v0.1)
+
+| Bileşen | Durum | Açıklama |
+|---------|-------|----------|
+| PPO Agent | ✅ Tamamlandı | Mock environment'ta 100K step eğitildi |
+| Rule-Based Agent | ✅ Tamamlandı | Utility AI tabanlı karar verme |
+| Mock Environment | ✅ Tamamlandı | Basit savaş simülasyonu |
+| DDA Sistemi | ✅ Tamamlandı | 7 zorluk seviyesi |
+| gRPC Server | ✅ Tamamlandı | UE5 entegrasyonuna hazır |
+
+### Sonraki Adımlar
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  1. OYUN VERİSİ TOPLAMA                                         │
+│     └─> Firma'dan CALYPSO oyun mekanikleri ve aksiyon listesi   │
+│                                                                 │
+│  2. ENVIRONMENT GÜNCELLEME                                      │
+│     └─> Mock env → Gerçek oyun dinamiklerine uygun env          │
+│                                                                 │
+│  3. İTERATİF EĞİTİM DÖNGÜSÜ                                     │
+│     ┌─────────────────────────────────────────────┐             │
+│     │  Eğitim → Değerlendirme → Kod Güncelleme   │◄──┐         │
+│     │     │           │              │            │   │         │
+│     │     └───────────┴──────────────┘            │   │         │
+│     │              En iyi sonuç?                  │   │         │
+│     │                   │                         │   │         │
+│     │         Hayır ────┴──── Evet               │   │         │
+│     │           │              │                  │   │         │
+│     │           ▼              ▼                  │   │         │
+│     │     Tekrar Eğit    Production Deploy       │───┘         │
+│     └─────────────────────────────────────────────┘             │
+│                                                                 │
+│  4. UE5 ENTEGRASYONU                                            │
+│     └─> gRPC client kurulumu ve gerçek oyun testleri            │
+│                                                                 │
+│  5. FINE-TUNING                                                 │
+│     └─> Oyuncu feedback'ine göre sürekli iyileştirme            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Beklenen İyileştirmeler
+
+Gerçek oyun verileri geldiğinde:
+
+| Metrik | Şu An (Mock) | Hedef (Gerçek Veri) |
+|--------|--------------|---------------------|
+| Reward | 134.60 | 300+ |
+| Win Rate vs Rule-Based | %79 | %90+ |
+| Aksiyon Çeşitliliği | 9 genel | Oyuna özel |
+| Observation Space | 64-dim genel | Oyuna özel optimize |
+
+> **Not:** AI modeli, CALYPSO'nun gerçek oyun mekanikleri, harita yapısı ve silah sistemine göre yeniden eğitilecek ve optimal performansa ulaşana kadar iteratif olarak geliştirilecektir.
+
+---
+
 ## Lisans
 
 TÜBİTAK 1501 Sanayi Ar-Ge Projeleri Destekleme Programı kapsamında geliştirilmiştir.
