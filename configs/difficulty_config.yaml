@@ -1,0 +1,132 @@
+# Difficulty Configuration
+# TÜBİTAK İP-2 AI Bot System
+# Pfau et al. (2020) DDA referans
+
+# Zorluk Seviyeleri
+difficulty_levels:
+  1:
+    name: "Yolcu"
+    name_en: "Passenger"
+    health: 50
+    accuracy: 0.20
+    reaction_time: 1.0
+    aggression: 0.10
+    sight_range: 1000
+    hearing_range: 500
+    cover_usage_chance: 0.3
+    flank_chance: 0.1
+
+  2:
+    name: "Mürettebat"
+    name_en: "Crew"
+    health: 75
+    accuracy: 0.40
+    reaction_time: 0.7
+    aggression: 0.30
+    sight_range: 1500
+    hearing_range: 750
+    cover_usage_chance: 0.4
+    flank_chance: 0.2
+
+  3:
+    name: "Gemi Muhafızı"
+    name_en: "Ship Guard"
+    health: 100
+    accuracy: 0.60
+    reaction_time: 0.5
+    aggression: 0.50
+    sight_range: 2000
+    hearing_range: 1000
+    cover_usage_chance: 0.5
+    flank_chance: 0.3
+
+  4:
+    name: "Gemi Polisi"
+    name_en: "Ship Police"
+    health: 120
+    accuracy: 0.70
+    reaction_time: 0.4
+    aggression: 0.60
+    sight_range: 2200
+    hearing_range: 1100
+    cover_usage_chance: 0.6
+    flank_chance: 0.4
+
+  5:
+    name: "Koruma"
+    name_en: "Bodyguard"
+    health: 150
+    accuracy: 0.80
+    reaction_time: 0.3
+    aggression: 0.70
+    sight_range: 2500
+    hearing_range: 1250
+    cover_usage_chance: 0.7
+    flank_chance: 0.5
+
+  6:
+    name: "Sahil Güvenlik"
+    name_en: "Coast Guard"
+    health: 175
+    accuracy: 0.85
+    reaction_time: 0.25
+    aggression: 0.80
+    sight_range: 2750
+    hearing_range: 1375
+    cover_usage_chance: 0.8
+    flank_chance: 0.6
+
+  7:
+    name: "Özel Kuvvetler"
+    name_en: "Special Forces"
+    health: 200
+    accuracy: 0.95
+    reaction_time: 0.15
+    aggression: 0.90
+    sight_range: 3000
+    hearing_range: 1500
+    cover_usage_chance: 0.9
+    flank_chance: 0.7
+
+# Adaptif Zorluk Ayarları (DDA)
+adaptive_difficulty:
+  enabled: true
+
+  # Oyuncu performans pencereleri
+  evaluation_window_seconds: 60
+  min_samples_for_adjustment: 10
+
+  # Zorluk değişim hızı (smooth transitions)
+  adjustment_rate: 0.1  # 0-1 arası, yavaş geçiş için düşük
+  min_difficulty: 0.1
+  max_difficulty: 1.0
+
+  # Tetikleyiciler
+  triggers:
+    increase_difficulty:
+      player_accuracy_above: 0.7
+      player_kd_above: 2.0
+      player_survival_above: 120  # seconds
+
+    decrease_difficulty:
+      player_accuracy_below: 0.3
+      player_kd_below: 0.5
+      player_deaths_in_window: 3
+
+# Player Performance Metrikleri
+player_metrics:
+  tracked:
+    - accuracy_ratio
+    - kill_death_ratio
+    - average_lifespan
+    - headshot_ratio
+    - damage_per_minute
+    - objectives_completed
+    - reaction_time_avg
+
+  weights:
+    accuracy_ratio: 0.25
+    kill_death_ratio: 0.30
+    average_lifespan: 0.20
+    headshot_ratio: 0.10
+    damage_per_minute: 0.15

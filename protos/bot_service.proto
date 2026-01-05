@@ -1,0 +1,394 @@
+// TÜBİTAK İP-2 AI Bot System
+// gRPC Service Definitions
+// Unreal Engine <-> Python RL Server Communication
+
+syntax = "proto3";
+
+package calypso.ai;
+
+option java_multiple_files = true;
+option java_package = "com.mbgames.calypso.ai";
+option java_outer_classname = "BotServiceProto";
+
+// ============================================
+// Ana Bot AI Servisi
+// ============================================
+service BotAIService {
+  // Tek bir bot için aksiyon al
+  rpc GetAction(GameState) returns (BotAction);
+
+  // Batch aksiyon - birden fazla bot için
+  rpc GetActionsBatch(BatchGameState) returns (BatchBotAction);
+
+  // Reward gönder (training mode)
+  rpc SendReward(RewardSignal) returns (Acknowledgement);
+
+  // Episode sonu bildirimi
+  rpc EndEpisode(EpisodeEnd) returns (Acknowledgement);
+
+  // Streaming mode - sürekli state/action akışı
+  rpc StreamActions(stream GameState) returns (stream BotAction);
+}
+
+// ============================================
+// Training Servisi
+// ============================================
+service TrainingService {
+  // Training başlat
+  rpc StartTraining(TrainingConfig) returns (TrainingStatus);
+
+  // Training durdur
+  rpc StopTraining(Empty) returns (TrainingStatus);
+
+  // Training durumu
+  rpc GetTrainingStatus(Empty) returns (TrainingStatus);
+
+  // Model kaydet
+  rpc SaveModel(SaveModelRequest) returns (Acknowledgement);
+
+  // Model yükle
+  rpc LoadModel(LoadModelRequest) returns (Acknowledgement);
+}
+
+// ============================================
+// Difficulty Management Servisi
+// ============================================
+service DifficultyService {
+  // Oyuncu metriklerini güncelle
+  rpc UpdatePlayerMetrics(PlayerMetrics) returns (DifficultyResponse);
+
+  // Mevcut zorluk seviyesini al
+  rpc GetCurrentDifficulty(PlayerID) returns (DifficultyResponse);
+
+  // Manuel zorluk ayarla
+  rpc SetDifficulty(SetDifficultyRequest) returns (Acknowledgement);
+}
+
+// ============================================
+// Health Check Servisi
+// ============================================
+service HealthService {
+  rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// ============================================
+// Message Definitions
+// ============================================
+
+// Boş mesaj
+message Empty {}
+
+// Onay mesajı
+message Acknowledgement {
+  bool success = 1;
+  string message = 2;
+  int64 timestamp = 3;
+}
+
+// ============================================
+// Game State Messages
+// ============================================
+
+// Bot'un gözlemlediği oyun durumu (64 boyutlu observation)
+message GameState {
+  string bot_id = 1;
+  int64 timestamp = 2;
+
+  // Bot'un kendi durumu (16 değer)
+  BotSelfState self_state = 3;
+
+  // Algılanan düşmanlar (en yakın 3 düşman, her biri 8 değer = 24 değer)
+  repeated EnemyState enemies = 4;
+
+  // Çevre bilgisi (16 değer)
+  EnvironmentState environment = 5;
+
+  // Takım durumu (8 değer)
+  TeamState team_state = 6;
+}
+
+// Bot'un kendi durumu
+message BotSelfState {
+  float health = 1;               // 0-1 normalized
+  float armor = 2;                // 0-1 normalized
+  float ammo_primary = 3;         // 0-1 normalized
+  float ammo_secondary = 4;       // 0-1 normalized
+
+  // Pozisyon (normalized map coordinates)
+  float pos_x = 5;
+  float pos_y = 6;
+  float pos_z = 7;
+
+  // Yön
+  float rotation_yaw = 8;         // -1 to 1
+  float rotation_pitch = 9;       // -1 to 1
+
+  // Hareket durumu
+  float velocity_x = 10;
+  float velocity_y = 11;
+  float velocity_z = 12;
+
+  // Durum flagleri
+  float is_in_cover = 13;         // 0 or 1
+  float is_reloading = 14;        // 0 or 1
+  float is_aiming = 15;           // 0 or 1
+  float time_since_last_damage = 16;  // normalized
+}
+
+// Düşman durumu
+message EnemyState {
+  float distance = 1;             // 0-1 normalized (0=yakın, 1=uzak)
+  float angle = 2;                // -1 to 1 (relative angle)
+  float health_estimate = 3;      // 0-1 (tahmin)
+  float is_visible = 4;           // 0 or 1
+  float is_in_cover = 5;          // 0 or 1
+  float threat_level = 6;         // 0-1
+  float velocity_towards_me = 7;  // -1 to 1
+  float is_aiming_at_me = 8;      // 0 or 1
+}
+
+// Çevre durumu
+message EnvironmentState {
+  // En yakın siper noktaları (4 adet, her biri mesafe + açı)
+  float cover1_distance = 1;
+  float cover1_angle = 2;
+  float cover2_distance = 3;
+  float cover2_angle = 4;
+  float cover3_distance = 5;
+  float cover3_angle = 6;
+  float cover4_distance = 7;
+  float cover4_angle = 8;
+
+  // Objective bilgisi
+  float objective_distance = 9;
+  float objective_angle = 10;
+  float objective_progress = 11;
+
+  // Tehdit bölgeleri
+  float danger_zone_distance = 12;
+  float danger_zone_angle = 13;
+
+  // Genel
+  float time_in_combat = 14;      // normalized
+  float enemies_in_range = 15;    // count normalized
+  float allies_in_range = 16;     // count normalized
+}
+
+// Takım durumu
+message TeamState {
+  float team_health_avg = 1;      // 0-1
+  float team_alive_ratio = 2;     // 0-1
+  float nearest_ally_distance = 3;
+  float nearest_ally_angle = 4;
+  float team_objective_progress = 5;
+  float team_kills = 6;           // normalized
+  float team_deaths = 7;          // normalized
+  float support_needed = 8;       // 0-1 (ally in danger)
+}
+
+// Batch game state
+message BatchGameState {
+  repeated GameState states = 1;
+}
+
+// ============================================
+// Action Messages
+// ============================================
+
+// Bot aksiyonu (8 farklı aksiyon tipi)
+message BotAction {
+  string bot_id = 1;
+  int64 timestamp = 2;
+
+  ActionType action_type = 3;
+
+  // Continuous action parameters
+  float move_direction_x = 4;     // -1 to 1
+  float move_direction_y = 5;     // -1 to 1
+  float aim_direction_x = 6;      // -1 to 1
+  float aim_direction_y = 7;      // -1 to 1
+
+  // Action confidence (for debugging)
+  float confidence = 8;
+
+  // Utility AI scores (for visualization)
+  map<string, float> utility_scores = 9;
+}
+
+// Aksiyon tipleri
+enum ActionType {
+  ACTION_IDLE = 0;
+  ACTION_ATTACK = 1;
+  ACTION_TAKE_COVER = 2;
+  ACTION_FLEE = 3;
+  ACTION_RELOAD = 4;
+  ACTION_PATROL = 5;
+  ACTION_INVESTIGATE = 6;
+  ACTION_SUPPORT = 7;
+  ACTION_FLANK = 8;
+}
+
+// Batch actions
+message BatchBotAction {
+  repeated BotAction actions = 1;
+}
+
+// ============================================
+// Reward Messages
+// ============================================
+
+message RewardSignal {
+  string bot_id = 1;
+  int64 timestamp = 2;
+
+  float total_reward = 3;
+
+  // Reward breakdown (debugging/visualization için)
+  map<string, float> reward_components = 4;
+
+  bool is_terminal = 5;  // Episode bitti mi?
+}
+
+message EpisodeEnd {
+  string bot_id = 1;
+  int64 timestamp = 2;
+
+  EpisodeResult result = 3;
+  float total_episode_reward = 4;
+  int32 episode_length = 5;
+
+  // Episode statistics
+  map<string, float> statistics = 6;
+}
+
+enum EpisodeResult {
+  RESULT_UNKNOWN = 0;
+  RESULT_WIN = 1;
+  RESULT_LOSS = 2;
+  RESULT_DRAW = 3;
+  RESULT_TIMEOUT = 4;
+}
+
+// ============================================
+// Training Messages
+// ============================================
+
+message TrainingConfig {
+  int64 total_timesteps = 1;
+  int32 eval_frequency = 2;
+  string save_path = 3;
+  bool resume = 4;
+  string resume_path = 5;
+}
+
+message TrainingStatus {
+  bool is_training = 1;
+  int64 current_timestep = 2;
+  int64 total_timesteps = 3;
+  float progress = 4;
+
+  // Metrics
+  float mean_reward = 5;
+  float mean_episode_length = 6;
+  float policy_loss = 7;
+  float value_loss = 8;
+
+  string status_message = 9;
+}
+
+message SaveModelRequest {
+  string path = 1;
+  string name = 2;
+}
+
+message LoadModelRequest {
+  string path = 1;
+}
+
+// ============================================
+// Difficulty Messages
+// ============================================
+
+message PlayerID {
+  string player_id = 1;
+}
+
+message PlayerMetrics {
+  string player_id = 1;
+  int64 timestamp = 2;
+
+  float accuracy_ratio = 3;
+  float kill_death_ratio = 4;
+  float average_lifespan = 5;
+  float headshot_ratio = 6;
+  float damage_per_minute = 7;
+  int32 objectives_completed = 8;
+  float reaction_time_avg = 9;
+
+  // Recent events
+  int32 recent_kills = 10;
+  int32 recent_deaths = 11;
+  float recent_damage_dealt = 12;
+  float recent_damage_taken = 13;
+}
+
+message DifficultyResponse {
+  string player_id = 1;
+
+  float current_difficulty = 2;   // 0.1 - 1.0
+  int32 difficulty_level = 3;     // 1-7
+  string difficulty_name = 4;
+
+  // Bot parameters for this difficulty
+  BotDifficultyParams bot_params = 5;
+
+  // Trend
+  DifficultyTrend trend = 6;
+}
+
+message BotDifficultyParams {
+  int32 health = 1;
+  float accuracy = 2;
+  float reaction_time = 3;
+  float aggression = 4;
+  float sight_range = 5;
+  float hearing_range = 6;
+  float cover_usage_chance = 7;
+  float flank_chance = 8;
+}
+
+enum DifficultyTrend {
+  TREND_STABLE = 0;
+  TREND_INCREASING = 1;
+  TREND_DECREASING = 2;
+}
+
+message SetDifficultyRequest {
+  string player_id = 1;
+  int32 difficulty_level = 2;
+}
+
+// ============================================
+// Health Check Messages
+// ============================================
+
+message HealthCheckRequest {
+  string service = 1;
+}
+
+message HealthCheckResponse {
+  enum ServingStatus {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+    SERVICE_UNKNOWN = 3;
+  }
+  ServingStatus status = 1;
+  string version = 2;
+  int64 uptime_seconds = 3;
+
+  // Resource usage
+  float cpu_usage = 4;
+  float memory_usage = 5;
+  float gpu_usage = 6;
+}

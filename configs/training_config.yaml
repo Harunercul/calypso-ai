@@ -1,0 +1,76 @@
+# Training Configuration
+# TÜBİTAK İP-2 AI Bot System
+
+# PPO Hyperparameters (Chelarescu, 2022 referans)
+ppo:
+  learning_rate: 0.0003
+  n_steps: 2048
+  batch_size: 64
+  n_epochs: 10
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_range: 0.2
+  clip_range_vf: null
+  ent_coef: 0.01
+  vf_coef: 0.5
+  max_grad_norm: 0.5
+  target_kl: 0.03
+
+# Neural Network Architecture
+policy:
+  net_arch:
+    pi: [256, 256]  # Policy network
+    vf: [256, 256]  # Value network
+  activation_fn: "tanh"
+  ortho_init: true
+
+# Training Settings
+training:
+  total_timesteps: 1000000
+  eval_freq: 10000
+  n_eval_episodes: 10
+  save_freq: 50000
+  log_interval: 1
+
+# Environment Settings
+environment:
+  observation_dim: 64
+  action_dim: 8
+  max_episode_steps: 1000
+  frame_skip: 4
+
+# Reward Weights
+rewards:
+  kill_enemy: 10.0
+  damage_dealt: 1.0
+  damage_taken: -0.5
+  death: -10.0
+  survival_per_second: 0.1
+  objective_progress: 5.0
+  team_support: 2.0
+  cover_usage: 0.5
+  headshot_bonus: 3.0
+  assist: 2.0
+
+# Curriculum Learning (Oh et al., 2022 referans)
+curriculum:
+  enabled: true
+  stages:
+    - name: "basic_combat"
+      difficulty: 1
+      timesteps: 200000
+    - name: "intermediate"
+      difficulty: 3
+      timesteps: 400000
+    - name: "advanced"
+      difficulty: 5
+      timesteps: 700000
+    - name: "expert"
+      difficulty: 7
+      timesteps: 1000000
+
+# Self-Play Settings
+self_play:
+  enabled: false
+  opponent_update_freq: 10000
+  opponent_pool_size: 5

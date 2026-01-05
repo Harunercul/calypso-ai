@@ -1,0 +1,40 @@
+# Server Configuration
+# TÜBİTAK İP-2 AI Bot System
+
+# gRPC Server Settings
+server:
+  host: "0.0.0.0"
+  port: 50051
+  max_workers: 10
+  max_message_size: 104857600  # 100MB
+
+# Model Settings
+model:
+  path: "./models/ppo_latest.zip"
+  fallback_path: "./models/ppo_backup.zip"
+  device: "auto"  # auto, cpu, cuda
+
+# Inference Settings
+inference:
+  deterministic: false  # true for production, false for exploration
+  batch_inference: true
+  max_batch_size: 32
+  inference_timeout_ms: 100
+
+# Logging
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "./logs/server.log"
+  max_bytes: 10485760  # 10MB
+  backup_count: 5
+
+# Health Check
+health:
+  enabled: true
+  interval_seconds: 30
+
+# Metrics
+metrics:
+  enabled: true
+  prometheus_port: 9090
