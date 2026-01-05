@@ -6,5 +6,5 @@ Ana paket - Bot AI sistemi için Python RL Server
 """
 
 __version__ = "0.1.0"
-__author__ = "Harun Erçul"
+__author__ = "Harun Ercul"
 __project__ = "TÜBİTAK 1501 - MB Oyun"

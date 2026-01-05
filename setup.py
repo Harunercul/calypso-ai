@@ -10,7 +10,7 @@ with open("README.md", "r", encoding="utf-8") as f:
 setup(
     name="calypso-ai-bot",
     version="0.1.0",
-    author="Harun Erçul",
+    author="Harun Ercul",
     author_email="harun@mbgames.com",
     description="TÜBİTAK İP-2 AI Bot System for CALYPSO Game",
     long_description=long_description,

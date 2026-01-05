@@ -8,7 +8,7 @@
 | **İş Paketi** | İP-2: Yapay Zeka, Karakter ve Bot Geliştirme |
 | **Oyun** | CALYPSO (FPS/TPS) |
 | **Destek** | TÜBİTAK 1501 - Sanayi Ar-Ge Projeleri |
-| **Geliştirici** | Harun Erçul (AI/Python), MB Oyun (Unreal Engine) |
+| **Geliştirici** | Harun Ercul (AI/Python), MB Oyun (Unreal Engine) |
 
 ---
 
