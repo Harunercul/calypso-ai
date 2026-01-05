@@ -370,6 +370,19 @@ Gerçek oyun verileri geldiğinde:
 
 > **Not:** AI modeli, CALYPSO'nun gerçek oyun mekanikleri, harita yapısı ve silah sistemine göre yeniden eğitilecek ve optimal performansa ulaşana kadar iteratif olarak geliştirilecektir.
 
+### Firmadan Beklenen Veriler
+
+Aşağıdaki bileşenler firma tarafından sağlanacak oyun verilerine göre güncellenecektir:
+
+| Bileşen | Mevcut | Güncellenecek |
+|---------|--------|---------------|
+| **Aksiyon Listesi** | 9 genel aksiyon (IDLE, ATTACK, COVER...) | CALYPSO'ya özel aksiyonlar |
+| **Observation Space** | 64-dim genel vektör | Oyun mekaniğine özel sensör verileri |
+| **Reward Fonksiyonu** | Genel FPS ödülleri | CALYPSO objektiflerine göre ağırlıklar |
+| **Eğitim Sonuçları** | Mock environment test | Gerçek oyun verileriyle eğitim metrikleri |
+
+Detaylı gereksinim listesi için: [AI Eğitim Gereksinimleri](docs/05_AI_EGITIM_GEREKSINIMLERI.md)
+
 ---
 
 ## Lisans
