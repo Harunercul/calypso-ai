@@ -1,119 +1,516 @@
-# Difficulty Configuration
+# =============================================================================
+# CALYPSO Enemy & Difficulty Configuration
 # TÜBİTAK İP-2 AI Bot System
-# Pfau et al. (2020) DDA referans
+# Oyun dokümanlarına uygun (game_docx/)
+# =============================================================================
 
-# Zorluk Seviyeleri
-difficulty_levels:
-  1:
-    name: "Yolcu"
-    name_en: "Passenger"
+# ==========================
+# TIER 1 - DÜŞÜK GÜVENLİK
+# ==========================
+# Hafif Silahlılar (Güvenlik Görevlileri, Basit Mürettebat)
+# Paniklerler, titrerler, çok düşük isabet
+
+tier_1:
+  name: "Düşük Güvenlik"
+  description: "Hafif Silahlılar - Güvenlik Görevlileri, Basit Mürettebat"
+
+  variants:
+    hg_pistol:
+      name: "Güvenlik Görevlisi"
+      spawn_chance: 0.70
+      weapon:
+        type: "HG"
+        name: "Tabanca"
+        damage: 4
+        rpm: 30
+        magazine: 7
+        reload_time: 2.0
+      stats:
+        health: 100
+        armor: 0.10  # %10 veya zırhsız
+        accuracy: 0.15  # Çok düşük - genellikle ıskalarlar
+        speed: "medium_fast"  # brute -1
+
+    smg:
+      name: "Basit Mürettebat"
+      spawn_chance: 0.30
+      weapon:
+        type: "SMG"
+        name: "Hafif Makinalı"
+        damage: 2
+        rpm: 80
+        magazine: 15
+        reload_time: 3.0
+      stats:
+        health: 100
+        armor: 0.10
+        accuracy: 0.15
+        speed: "medium_fast"
+
+  restrictions:
+    can_use_consumables: false
+    can_heal: false
+    can_call_reinforcement: false
+
+  # Tespit ve İlk Tepki Davranışları
+  detection_behavior:
+    surprise_duration: 1.5  # Şaşkınlık süresi (saniye)
+    panic_fire_duration: 2.0  # Kontrolsüz ateş süresi
+    flee_to_cover_after_panic: true
+    call_for_help: false
+
+  # Çatışma Döngüsü (Combat Loop)
+  combat_loop:
+    passive_cover_wait: 7.0  # Siperde bekleme süresi
+    aim_duration: 5.0  # Nişan alma süresi (ateş etmeden)
+    fire_duration: 2.0  # Ateş süresi
+    reload_exposed: true  # Açıkta reload yapar (savunmasız)
+    reload_duration: 3.0
+
+  # Alan Bazlı Davranışlar
+  area_behaviors:
+    narrow:  # Dar alanlar
+      action: "blind_fire"
+      duration: 10.0
+      then: "panic_flee"
+    medium:  # Orta alanlar
+      action: "hide_under_cover"
+      flee_distance: 2.0  # metre yaklaşınca kaçar
+    wide:  # Geniş alanlar
+      action: "find_far_cover"
+      fallback: "crouch_cover_head"
+      wait_duration: 5.0
+
+  # Spawn Ayarları
+  spawn:
+    trigger: "alarm"
+    interval: 30  # saniye
+    group_size: [3, 5]  # 3-5 kişilik gruplar
+    locations: ["kitchen_doors", "crew_quarters", "nearby_corridors"]
+    stealth_patrol: true  # Gizlilik bölümlerinde basit rotalarda yürürler
+
+
+# ==========================
+# TIER 2 - ORTA SEVİYE
+# ==========================
+# Geminin Silahlı Güvenlik Ekibi, Paralı Askerler
+# Taktiksel davranış, koordineli saldırı
+
+tier_2:
+  name: "Orta Seviye Düşmanlar"
+  description: "Geminin Silahlı Güvenlik Ekibi, Paralı Askerler"
+
+  variants:
+    ar_burst:
+      name: "Silahlı Güvenlik"
+      spawn_chance: 0.60
+      weapon:
+        type: "AR"
+        name: "Burst Rifle"
+        damage: 6  # x3 = 18 toplam
+        burst_count: 3
+        burst_interval: 1.2  # saniye
+        magazine: 30
+        reload_time: 4.0
+      stats:
+        health: 150
+        armor: 0.25  # %25 hasar azaltma
+        accuracy: 0.40
+        speed: "medium"  # brute -2
+      role: "suppression"  # Baskılama ateşi
+
+    sg_shotgun:
+      name: "Paralı Asker"
+      spawn_chance: 0.40
+      weapon:
+        type: "SG"
+        name: "Shotgun"
+        damage: 15
+        fire_interval: 2.0  # Her 2 saniyede bir atış
+        magazine: 8
+        reload_time: 8.0
+      stats:
+        health: 150
+        armor: 0.25
+        accuracy: 0.40
+        speed: "medium"
+      role: "flanker"  # Kuşatma
+
+  # Bomba Paketi (Ek Spawn)
+  grenade_pouch:
+    spawn_chance: 0.40  # Tüm versiyonlar için ek
+    visual: "bright_pouches_on_chest"
     health: 50
-    accuracy: 0.20
-    reaction_time: 1.0
-    aggression: 0.10
-    sight_range: 1000
-    hearing_range: 500
-    cover_usage_chance: 0.3
-    flank_chance: 0.1
+    explosion_damage: 200
+    explosion_radius: 500  # UU
+    prep_time: 2.0  # Bağırma süresi
+    cooldown: 20.0
+    warning_indicator: "red_circle"  # 1.5s önce görünür
 
-  2:
-    name: "Mürettebat"
-    name_en: "Crew"
-    health: 75
-    accuracy: 0.40
-    reaction_time: 0.7
-    aggression: 0.30
-    sight_range: 1500
-    hearing_range: 750
-    cover_usage_chance: 0.4
-    flank_chance: 0.2
+  restrictions:
+    can_heal: false
+    can_use_grenades: true
 
-  3:
-    name: "Gemi Muhafızı"
-    name_en: "Ship Guard"
-    health: 100
-    accuracy: 0.60
-    reaction_time: 0.5
-    aggression: 0.50
-    sight_range: 2000
-    hearing_range: 1000
-    cover_usage_chance: 0.5
-    flank_chance: 0.3
+  # Davranış Özeti (Core Mechanics)
+  core_mechanics:
+    suppression_fire:
+      unit: "AR"
+      description: "Oyuncu siperdeyken sürekli burst ile yerinde tutar"
+    flanking:
+      unit: "SG"
+      sprint_duration: 3.5
+      description: "Siperden sipere kısa sprintlerle oyuncunun yanına sızar"
+    grenade_usage:
+      prep_time: 2.0
+      cooldown: 20.0
+    self_defense:
+      grenade_reaction_time: 0.5
+      action: "sprint_to_escape_route"
 
-  4:
-    name: "Gemi Polisi"
-    name_en: "Ship Police"
-    health: 120
+  # Dengeleme
+  balancing:
+    initial_reaction_delay: 1.3  # İlk karşılaşmada gecikme
+    first_shots_miss: true  # İlk atışlar bilerek ıskalanır
+    overall_accuracy: 0.40
+
+  # Alan Bazlı Taktiksel Davranışlar (9 Kişilik Karma Grup)
+  group_tactics:
+    composition:
+      shields: 2
+      ars: 4
+      sgs: 3
+
+    narrow_areas:  # Dar Alanlar ve Koridorlar
+      shields:
+        with_shield: "slow_advance_absorb_bullets"
+        without_shield: "retreat_6s_recharge"
+      sgs:
+        with_shield: "peek_fire_retreat"
+        without_shield: "sprint_3m_to_next_cover"
+      ars:
+        with_shield: "continuous_suppression"
+        without_shield: "crossfire_pairs"
+
+    wide_areas:  # Geniş Alanlar
+      shields:
+        with_shield: "center_advance_as_bait"
+        without_shield: "defensive_until_recharge"
+      sgs:
+        with_shield: "stealth_flank_no_fire"
+        without_shield: "finishing_shot_from_cover"
+      ars:
+        with_shield: "protect_shield_and_cover_sgs"
+        without_shield: "crossfire_force_cover_change"
+
+    entry_spawn:  # Giriş ve Operasyonel Yerleşme
+      order: ["shields", "ars", "sgs"]
+      shields: "hold_door_protect_exit"
+      ars: "rush_to_high_far_cover"
+      sgs: "position_near_shields_flank_route"
+
+    retreat:  # Geri Çekilme
+      trigger: "front_shields_destroyed"
+      reaction: "all_units_retreat_with_cover_fire"
+      sgs_behavior: "join_ar_defense_line"
+      last_unit_behavior: "run_to_panel_call_help_3s"
+
+
+# ==========================
+# TIER 2 - MARKSMAN
+# ==========================
+tier_2_marksman:
+  name: "Marksman"
+  description: "Nişancı - Uzak mesafe baskı birimi"
+
+  stats:
+    health: 50  # 40-50 HP
+    armor: 0
     accuracy: 0.70
-    reaction_time: 0.4
-    aggression: 0.60
-    sight_range: 2200
-    hearing_range: 1100
-    cover_usage_chance: 0.6
-    flank_chance: 0.4
 
-  5:
-    name: "Koruma"
-    name_en: "Bodyguard"
-    health: 150
-    accuracy: 0.80
-    reaction_time: 0.3
-    aggression: 0.70
-    sight_range: 2500
-    hearing_range: 1250
-    cover_usage_chance: 0.7
-    flank_chance: 0.5
+  weapon:
+    type: "DMR"
+    damage: 15
+    rpm: 10
+    magazine: 4
+    reload_time: 10.0
 
-  6:
-    name: "Sahil Güvenlik"
-    name_en: "Coast Guard"
-    health: 175
-    accuracy: 0.85
-    reaction_time: 0.25
-    aggression: 0.80
-    sight_range: 2750
-    hearing_range: 1375
-    cover_usage_chance: 0.8
-    flank_chance: 0.6
+  spawn:
+    trigger: "tier_2_activated_plus_60s"
+    interval: 90  # Her 90 saniyede 1-2 Marksman
+    count: [1, 2]
+    locations: ["upper_deck", "ballroom_balcony", "corridor_end"]
 
-  7:
-    name: "Özel Kuvvetler"
-    name_en: "Special Forces"
-    health: 200
-    accuracy: 0.95
-    reaction_time: 0.15
-    aggression: 0.90
-    sight_range: 3000
-    hearing_range: 1500
-    cover_usage_chance: 0.9
-    flank_chance: 0.7
+  area_behaviors:
+    narrow: "position_at_corridor_end"
+    medium: "behind_columns_tables"
+    wide: "elevated_platform_semi_sniper"
 
-# Adaptif Zorluk Ayarları (DDA)
+
+# ==========================
+# TIER 2 - ROBOTIC
+# ==========================
+tier_2_robotic:
+  spider_mine:
+    name: "Örümcek Mayın"
+    description: "4 bacaklı intihar bombacı robot"
+
+    stats:
+      body_health: 250
+      leg_health: 50  # Her bacağın kendi canı
+      leg_count: 4
+      armor: 0
+      speed: "medium_slow"  # base tier 2'den biraz yavaş
+
+    damage:
+      type: "explosive"
+      amount: "60% player HP"
+      variants_possible: true
+
+    movement:
+      surfaces: ["floor", "wall", "ceiling"]
+      legs_3_4: "normal_walk"
+      legs_2: "fall_immobile"
+      physics_push: "moves_toward_push_explodes_on_surface"
+
+    explosion:
+      proximity_trigger_distance: 2.0  # metre
+      countdown: 2.5  # saniye
+      cancel_if_legs_broken_and_out_of_range: true
+      warning: ["beep_sound", "red_light"]
+
+    leg_damage:
+      1_leg_broken: "reduced_mobility_unstable"
+      2_legs_broken: "crawl_slow_approach"
+
+    spawn:
+      trigger: "alarm_level_2"
+      schedule:
+        - time: 0
+          action: "wait"
+        - time: 45
+          action: "spawn_1"
+        - time: 50
+          action: "spawn_2"
+        - time: 95
+          action: "spawn_3"
+        - time: 100
+          action: "spawn_4"
+      interval: 45
+      spawn_gap: 5
+      max_on_map: 3
+      locations: ["corridor_doors", "service_elevators", "storage_rooms", "vents"]
+
+    area_behaviors:
+      narrow: "use_walls_ceiling_squeeze_with_other_enemies"
+      medium: "attack_from_ceiling_or_walls"
+      wide: "attack_from_uncontrolled_areas"
+
+
+# ==========================
+# TIER 2 - SPECIAL
+# ==========================
+tier_2_special:
+
+  plasma_shield_guard:
+    name: "Plasma Kalkanlı Muhafız"
+    description: "Enerji kalkanı taşıyan ağır birim"
+
+    stats:
+      health: 150
+      armor_health: 100
+      armor: 0.25
+      speed: "medium"  # Sürekli baskı kuracak tempoda
+
+    shield:
+      health: 500
+      type: "energy"
+      regeneration: 6.0  # saniye sonra yenilenir (saf hasarla kırılırsa)
+
+    weak_point:
+      name: "Battery"
+      health: 125  # Kalkan canının çeyreği
+      locations: ["back", "left_shoulder", "right_shoulder", "head"]
+      random_spawn: true
+      effect_if_destroyed: "shield_permanently_disabled"
+
+    weapon:
+      type: "energy_pistol"
+      damage: "low"
+
+    area_tactics:
+      narrow:
+        strategy: "Frontline Push"
+        action: "block_corridor_advance_absorb"
+      wide:
+        strategy: "Tactical Cover"
+        action: "front_of_teammates_pressure_create_fire_line"
+      entry:
+        strategy: "Breach Entry"
+        action: "first_out_of_door"
+
+    spawn:
+      alarm_1: {interval: 60, count: 1}
+      alarm_2: {interval: 60, count: 2}
+      alarm_3: {interval: 60, count: 3}
+      locations: ["corridor_doors", "service_elevators", "storage", "security_office"]
+
+  iron_clad_vanguard:
+    name: "Iron-Clad Vanguard"
+    description: "Devasa metal kalkanlı ağır tank"
+
+    stats:
+      health: 150
+      armor: 150
+      armor_reduction: 0.25
+      speed: "medium"
+
+    shield:
+      health: 2000  # Önceki versiyonun 4 katı
+      type: "metal"
+      regeneration: null  # YOK - kalıcı hasar
+      visual_damage: "metal_warping_breaking"
+
+    weak_point:
+      name: "Bolt"
+      health: 125
+      location: "main_hinge"
+      damage_multiplier: 2.0  # 2x hasar
+
+    transformation:  # "The Shedding"
+      trigger: "shield_destroyed"
+      stagger: false  # Sarsılma yok
+      new_behavior: "tier_2_sg"
+      new_weapon: "shotgun_from_back"
+
+    post_shield_behavior:
+      role: "agile_shotgun_specialist"
+      speed: "increased"  # Kalkan ağırlığından kurtuldu
+      action: "flank_coordinate_with_sgs"
+
+  sniper:
+    name: "Sniper"
+    description: "Keskin Nişancı - Sadece uygun alanlarda"
+
+    stats:
+      health: 40
+      armor: 0
+      damage: "high"  # Tek atışta ciddi zırh ve HP
+
+    spawn:
+      trigger: "marksman_replacement_or_addition"
+      interval: 90
+      count: 1
+      condition: "wide_area_or_long_sight_line"
+      skip_if: "narrow_area_combat"
+      locations: ["upper_deck", "ship_edge_platform", "ballroom_balcony"]
+
+    area_behaviors:
+      narrow: "NO_SPAWN"
+      medium: "rare_if_long_corridor_visible"
+      wide: "elevated_long_range_force_movement"
+
+
+# ==========================
+# TIER 5 - BOSS
+# ==========================
+tier_5_boss:
+  juggernaut:
+    name: "The Juggernaut"
+    description: "Devasa anti-hero, kinetik çekiç, kurşun geçirmez zırh"
+
+    stats:
+      health: 1000
+      armor: 0.50  # %50 hasar azaltma (normal)
+      armor_note: "Normal'de zırh hasar yemez, sadece sersemlediğinde"
+      speed: "medium_slow"
+      speed_defense: "slow"
+
+    visual:
+      armor: "bulletproof_black"
+      weapon: "giant_kinetic_hammer"
+      weak_points: "red_LED_lines"
+
+    abilities:
+      kinetic_hammer_strike:
+        description: "Yere vurarak şok dalgaları"
+        hits: 3
+        hit_1_2: "weak"
+        hit_3: "big_heavy_stun"
+        camera_shake: true
+        player_stun_on_hit_3: true
+
+      leap_attack:
+        description: "Hızlıca zıplayıp atılma"
+        area_damage: true
+        wall_collision: "3s_stun"
+
+      defense_mode:
+        description: "Savunma pozisyonu"
+        damage_reduction: 0.90  # Toplam %90
+        speed_reduction: true
+        hammer_position: "ground_support"
+
+    weak_points:
+      location: "red_LED_lines_on_armor"
+      damageable_only_when: "stunned"
+      strategy: "dodge_shockwave_aim_LEDs"
+
+    attack_patterns:
+      hammer_combo:
+        animation: "shoulder_swing_to_ground"
+        follow_up: "if_player_in_area_second_swing_tracks"
+        no_idle_between: true
+
+      defense_stance:
+        animation: "hammer_down_support_cover_face"
+        movement: "slow_reposition"
+
+      leap:
+        animation: "quick_jump_land_damage"
+        collision_result: "stagger_3_steps_back"
+
+      walk:
+        animation: "slow_hammer_front_hide_LEDs"
+
+      idle:
+        animation: "hammer_ready_position"
+        note: "prototip için gerek yok"
+
+
+# ==========================
+# ADAPTIF ZORLUK (DDA)
+# ==========================
 adaptive_difficulty:
   enabled: true
 
-  # Oyuncu performans pencereleri
   evaluation_window_seconds: 60
   min_samples_for_adjustment: 10
+  adjustment_rate: 0.1
 
-  # Zorluk değişim hızı (smooth transitions)
-  adjustment_rate: 0.1  # 0-1 arası, yavaş geçiş için düşük
-  min_difficulty: 0.1
-  max_difficulty: 1.0
+  # Tier bazlı zorluk eşleştirmesi
+  tier_mapping:
+    very_easy: "tier_1"
+    easy: "tier_1"
+    medium: "tier_2"
+    hard: "tier_2_marksman"
+    very_hard: "tier_2_special"
+    extreme: "tier_2_special"
 
-  # Tetikleyiciler
   triggers:
     increase_difficulty:
       player_accuracy_above: 0.7
       player_kd_above: 2.0
-      player_survival_above: 120  # seconds
+      player_survival_above: 120
 
     decrease_difficulty:
       player_accuracy_below: 0.3
       player_kd_below: 0.5
       player_deaths_in_window: 3
 
-# Player Performance Metrikleri
+
+# ==========================
+# PLAYER METRICS
+# ==========================
 player_metrics:
   tracked:
     - accuracy_ratio
@@ -122,7 +519,6 @@ player_metrics:
     - headshot_ratio
     - damage_per_minute
     - objectives_completed
-    - reaction_time_avg
 
   weights:
     accuracy_ratio: 0.25

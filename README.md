@@ -22,6 +22,7 @@
 | 4 | [Unreal Entegrasyon Rehberi](docs/04_UNREAL_ENTEGRASYON_REHBERI.md) | UE5 tarafı için gRPC client kurulumu, C++ kod örnekleri ve Blueprint entegrasyonu |
 | 5 | [AI Eğitim Gereksinimleri](docs/05_AI_EGITIM_GEREKSINIMLERI.md) | AI modelini eğitmek için firmadan istenen oyun verileri checklist'i |
 | 6 | [Gelecek LLM Fikirleri](docs/06_GELECEK_LLM_FIKIRLERI.md) | İleride eklenebilecek LLM entegrasyonu fikirleri: NPC diyalog, taktik analiz, adaptif hikaye |
+| 7 | [CALYPSO Düşman Sistemi](docs/07_CALYPSO_DUSMAN_SISTEMI.md) | Oyun dokümanlarına uygun Tier bazlı düşman sistemi: Tier 1-5, silahlar, davranışlar, boss |
 
 ---
 
