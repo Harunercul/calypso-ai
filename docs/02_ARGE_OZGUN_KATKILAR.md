@@ -5,7 +5,80 @@
 
 ## Özet
 
-Bu proje, oyun yapay zekası alanında **5 temel özgün katkı** sunmaktadır. Klasik oyun AI sistemlerinden farklı olarak, hibrit mimari, makine öğrenmesi entegrasyonu ve akademik temelli tasarım ile Ar-Ge niteliği taşımaktadır.
+Bu proje, CALYPSO oyunu için **akademik literatür temelli** yapay zeka bot sistemi geliştirmektedir. Klasik oyun AI sistemlerinden farklı olarak, hibrit mimari, güçlendirmeli öğrenme ve oyuna özel adaptasyon ile Ar-Ge niteliği taşımaktadır.
+
+### Veri Kaynağı
+
+AI sistemi, firma tarafından sağlanan resmi oyun tasarım dokümanlarına dayanmaktadır:
+- `game_docx/` klasöründeki Tier 1-5 düşman dokümanları
+- Silah istatistikleri, davranış döngüleri, spawn kuralları
+
+---
+
+## Kullanılacak Yöntemler ve Özgün Katkılar
+
+### 1. Dürtü Tabanlı Yapay Zeka (Utility AI) Yaklaşımı
+
+Botların statik davranış sergilemesini engellemek ve oyuncu etkileşimine göre dinamik kararlar almasını sağlamak amacıyla Utility AI yöntemi kullanılmaktadır. Bu yöntem, botların ortam koşullarına, oyuncu pozisyonlarına ve tehdit analizlerine göre karar mekanizmasını şekillendirmesine olanak tanımaktadır.
+
+**Özgün Katkı:** Consideration sistemi ile çoklu faktörlerin eş zamanlı değerlendirilmesi ve response curve'ler ile dinamik skor hesaplama.
+
+**Uygulama:**
+```python
+# 96-dim observation'dan threat analizi
+tactical_info = {
+    'suppression_threat': 0.0,    # AR'lardan baskılama tehdidi
+    'flank_threat': 0.0,          # SG'lerden kuşatma tehdidi
+    'sniper_threat': 0.0,         # Keskin nişancı tehdidi
+    'explosive_threat': 0.0,      # Spider mine tehdidi
+    'shield_wall_active': 0.0,    # Kalkan duvarı var mı
+}
+```
+
+### 2. Davranış Ağacı (Behavior Tree) Kullanımı
+
+Yapay zeka karakterlerinin belirli görevleri yerine getirebilmesi için hiyerarşik karar mekanizmaları içeren bir davranış ağacı modeli uygulanmaktadır. Bu sayede botlar devriye gezme, saldırı yapma, kaçış stratejisi belirleme gibi eylemleri dinamik olarak gerçekleştirebilmektedir.
+
+**Özgün Katkı:** Custom Task ve Decorator node'ları ile CALYPSO'ya özel davranış modülleri.
+
+**CALYPSO Tier Davranış Döngüleri:**
+```
+Tier 1 (Düşük Güvenlik):
+[Tespit] → [Şaşkınlık 1.5s] → [Panik Ateşi 2s] → [Sipere Kaçış]
+                                                        ↓
+[Etkisiz Ateş 2s] ← [Uzun Nişan 5s] ← [Pasif Bekleme 7s]
+
+Tier 2 (Taktiksel):
+[Tespit] → [Pozisyon Al] → [Baskılama/Kuşatma] → [Koordineli Saldırı]
+     ↑                                                    │
+     └──────────── [Geri Çekilme] ← [Kayıp Analizi] ←────┘
+```
+
+### 3. Güçlendirmeli Öğrenme (Reinforcement Learning) ile Bot Eğitimi
+
+Oyuncuların oynayış tarzlarını anlamak ve botların buna uyum sağlamasını desteklemek amacıyla, PPO (Proximal Policy Optimization) ile AI eğitimi yapılmaktadır. Bu süreç, botların savaş, kaçış, saklanma gibi stratejik kararlar almasına yardımcı olmaktadır.
+
+**Özgün Katkı:** PPO algoritması ile self-play eğitimi ve Python-Unreal Engine bridge ile gerçek zamanlı inference.
+
+**Eğitim Sonuçları (Mock Data):**
+| Metrik | Tier 1 Model | Tier 2 Model |
+|--------|--------------|--------------|
+| **Reward** | 82.41 | 57.22 |
+| **Kill/Episode** | 4.00 | 6.20 |
+| **Hayatta Kalma** | %100 | %50 |
+| **Dominant Aksiyon** | FLANK (%75) | COORDINATE_ATTACK (%76) |
+
+### 4. Gerçekçi Karakter Animasyonları İçin İleri Seviye Inverse Kinematics (IK) Kullanımı
+
+Karakter animasyonlarının, zemin eğimine, düşman pozisyonlarına ve hareket hızına göre gerçekçi bir şekilde çalışması sağlanacaktır. Procedural Animation teknikleri ile karakterlerin otomatik animasyon uyarlamaları geliştirilmesi planlanmaktadır.
+
+**Özgün Katkı:** Foot IK, Aim IK ve Look-At IK sistemlerinin Control Rig ile entegrasyonu.
+
+### 5. Zorluk Seviyesine Göre Adaptif Düşman AI Modeli (DDA)
+
+Oyundaki botların zorluk seviyesini oyuncunun performansına göre dinamik olarak ayarlayan bir adaptif yapay zeka modeli tasarlanmıştır. Bu model, oyuncunun doğruluk oranı, tepki süresi, ortalama hayatta kalma süresi gibi parametreleri analiz ederek, botların zorluk seviyesini anlık olarak değiştirmektedir.
+
+**Özgün Katkı:** Player Performance Tracker ile metrik toplama ve Difficulty Manager ile yumuşak geçişli zorluk ayarlama.
 
 ---
 
@@ -62,10 +135,10 @@ Oyun motorları (Unreal, Unity) genellikle C++/C# ile sınırlıdır. Modern ML 
 │  (C++)          │    TCP:50051          │  (PyTorch)      │
 ├─────────────────┤                       ├─────────────────┤
 │ • Bot Character │                       │ • PPO Agent     │
-│ • AI Controller │  Observation (64D)    │ • Training Loop │
+│ • AI Controller │  Observation (96D)    │ • Training Loop │
 │ • Perception    │ ─────────────────────►│ • Reward Calc   │
 │                 │                       │                 │
-│                 │  Action (0-8)         │ • TensorBoard   │
+│                 │  Action (0-15)        │ • TensorBoard   │
 │                 │ ◄─────────────────────│ • Model Save    │
 └─────────────────┘                       └─────────────────┘
 ```
@@ -81,8 +154,8 @@ Oyun motorları (Unreal, Unity) genellikle C++/C# ile sınırlıdır. Modern ML 
 |---------|-----------|
 | Protokol | gRPC (Protocol Buffers) |
 | Port | 50051 (TCP) |
-| Observation | 64-dim float array |
-| Action | Discrete (0-8) |
+| Observation | **96-dim** float array (CALYPSO-özel) |
+| Action | **Discrete (0-15)** - 16 CALYPSO aksiyonu |
 | Latency | <10ms (lokal) |
 
 ---
@@ -95,26 +168,61 @@ Klasik oyun bot'ları **scriptlenmiş** davranışlar sergiler. Oyuncular kısa 
 ### Çözümümüz
 Proximal Policy Optimization (PPO) ile **deneyimden öğrenen** bot sistemi.
 
+### 16 CALYPSO Aksiyonu
+| ID | Aksiyon | Kategori | Açıklama |
+|----|---------|----------|----------|
+| 0 | IDLE | Temel | Bekle |
+| 1 | ATTACK | Temel | Standart saldırı |
+| 2 | TAKE_COVER | Temel | Sipere gir |
+| 3 | FLEE | Temel | Kaç |
+| 4 | RELOAD | Temel | Mermi doldur |
+| 5 | PATROL | Hareket | Devriye gez |
+| 6 | INVESTIGATE | Hareket | Araştır |
+| 7 | ADVANCE | Hareket | Agresif ilerle |
+| 8 | FLANK | Taktik | Yan manevra |
+| 9 | SUPPORT | Taktik | Takım desteği |
+| 10 | SUPPRESS | Taktik | Baskılama ateşi |
+| 11 | PEEK_FIRE | Taktik | Siperden peek-fire |
+| 12 | TARGET_WEAK_POINT | CALYPSO | Zayıf nokta hedefle |
+| 13 | EVADE_EXPLOSIVE | CALYPSO | Patlayıcıdan kaçın |
+| 14 | COUNTER_SHIELD | CALYPSO | Kalkan karşı manevrası |
+| 15 | COORDINATE_ATTACK | CALYPSO | Koordineli saldırı |
+
 ### Eğitim Sonuçları
 ```
-Training Results (100K steps):
-├── Mean Reward:     191.37 (vs 48.11 rule-based)
-├── Win Rate:        42%
-├── Survival Rate:   68%
-├── Improvement:     3x reward increase
-└── Training Time:   ~30 seconds
+CALYPSO Mock Environment Training Results:
+
+Tier 1 (50K steps):
+├── Mean Reward:     82.41 +/- 17.29
+├── Kill Rate:       4.00 per episode
+├── Survival Rate:   100%
+├── Training Time:   ~7 seconds
+└── Dominant Action: FLANK (75.4%)
+
+Tier 2 (100K steps):
+├── Mean Reward:     57.22 +/- 18.59
+├── Kill Rate:       6.20 per episode
+├── Survival Rate:   50%
+├── Training Time:   ~15 seconds
+└── Dominant Action: COORDINATE_ATTACK (75.9%)
+
+Öğrenilen Davranışlar:
+├── Model kalkanlı düşmanlara karşı TARGET_WEAK_POINT kullanmayı öğrendi
+├── Tier 2'de COUNTER_SHIELD aksiyonu aktif kullanılıyor
+└── Koordineli saldırı ile grup düşmanlara karşı etkili taktik
 ```
 
 ### Reward Fonksiyonu (Özgün Tasarım)
 ```python
 rewards = {
-    'kill_enemy':      +10.0,   # Teşvik: Saldırganlık
-    'damage_dealt':    +1.0,    # Teşvik: Etkili savaş
-    'damage_taken':    -0.5,    # Ceza: Dikkatsizlik
-    'death':           -10.0,   # Ceza: Hayatta kalma
-    'survival':        +0.1/s,  # Teşvik: Sürdürülebilirlik
-    'cover_usage':     +0.5,    # Teşvik: Taktiksel oyun
-    'headshot':        +3.0,    # Teşvik: Beceri
+    'kill_enemy':      +5.0 ~ +15.0,  # Tier'e göre değişken
+    'damage_dealt':    +1.0,
+    'damage_taken':    -0.5,
+    'death':           -10.0,
+    'survival':        +0.01/step,
+    'cover_usage':     +0.5,
+    'shield_destroy':  +3.0 ~ +4.0,   # CALYPSO özel
+    'boss_stun_hit':   +5.0,          # CALYPSO özel
 }
 ```
 
@@ -125,7 +233,7 @@ rewards = {
 
 ---
 
-## 4. Dinamik Zorluk Ayarlama (DDA)
+## 4. CALYPSO Tier Bazlı Zorluk Sistemi
 
 ### Problem
 Sabit zorluk seviyeleri (Easy/Medium/Hard) tüm oyuncular için uygun değildir:
@@ -133,7 +241,26 @@ Sabit zorluk seviyeleri (Easy/Medium/Hard) tüm oyuncular için uygun değildir:
 - Deneyimli oyuncular **boredom** yaşar
 
 ### Çözümümüz
-Oyuncu performansını **gerçek zamanlı** izleyerek otomatik zorluk ayarlama.
+Oyun tasarım dokümanlarına uygun **Tier bazlı** düşman sistemi ile dinamik zorluk.
+
+### CALYPSO Tier Sistemi (game_docx/ kaynaklı)
+
+| Tier | Düşman Tipi | HP | Accuracy | Silah | Davranış |
+|------|-------------|-----|----------|-------|----------|
+| 1 | Düşük Güvenlik | 100 | %15 | HG/SMG | Panik, kaçış |
+| 2 | Orta Seviye | 150 | %40 | AR/SG | Taktiksel, koordineli |
+| 2-M | Marksman | 50 | %70 | DMR | Uzak mesafe, hassas |
+| 2-R | Robotic | 250 | - | Patlayıcı | Spider mine, %60 HP hasar |
+| 2-S | Special | 150+500 | %35 | Enerji | Kalkan mekaniği |
+| 5 | Boss | 1000 | %90 | Çekiç | Pattern-based, stun |
+
+### Tier Bazlı Spawn Kuralları
+
+| Alarm | Tier 1 | Tier 2 | Marksman | Spider | Special |
+|-------|--------|--------|----------|--------|---------|
+| 1 | 3-5 / 30s | - | - | - | 1 / 60s |
+| 2 | - | 9 kişi grup | 1-2 / 90s | 2 / 45s | 2 / 60s |
+| 3 | - | Sürekli | 1-2 / 90s | 3 / 45s | 3 / 60s |
 
 ### Player Performance Tracker
 ```
@@ -144,25 +271,21 @@ Tracked Metrics:
 ├── headshot_ratio      (Weight: 0.10)
 └── damage_per_minute   (Weight: 0.15)
                         ─────────────
-                        Skill Score → Difficulty
+                        Skill Score → Tier Selection
 ```
 
-### 7 Kademeli Zorluk Sistemi
-| Level | İsim | HP | Accuracy | Reaction | Aggression |
-|-------|------|-----|----------|----------|------------|
-| 1 | Yolcu | 50 | 20% | 1.0s | 10% |
-| 2 | Mürettebat | 75 | 40% | 0.7s | 30% |
-| 3 | Gemi Muhafızı | 100 | 60% | 0.5s | 50% |
-| 4 | Gemi Polisi | 120 | 70% | 0.4s | 60% |
-| 5 | Koruma | 150 | 80% | 0.3s | 70% |
-| 6 | Sahil Güvenlik | 175 | 85% | 0.25s | 80% |
-| 7 | Özel Kuvvetler | 200 | 95% | 0.15s | 90% |
+### Adaptif Zorluk Tetikleyicileri
+```yaml
+triggers:
+  increase_difficulty:
+    player_accuracy_above: 0.7
+    player_kd_above: 2.0
+    player_survival_above: 120s
 
-### Yumuşak Geçiş Algoritması
-```python
-# Exponential Moving Average ile smooth transition
-new_difficulty = current + adjustment_rate × (target - current)
-# adjustment_rate = 0.1 (yavaş, fark edilmez geçiş)
+  decrease_difficulty:
+    player_accuracy_below: 0.3
+    player_kd_below: 0.5
+    player_deaths_in_window: 3
 ```
 
 ### Akademik Referans
@@ -170,7 +293,56 @@ new_difficulty = current + adjustment_rate × (target - current)
 
 ---
 
-## 5. Akademik Temelli Tasarım
+## 5. 96-Dim CALYPSO Observation Space
+
+### Problem
+Genel FPS observation'ları oyuna özel detayları yakalayamaz.
+
+### Çözümümüz
+CALYPSO oyun mekaniğine özel genişletilmiş observation space.
+
+### Observation Yapısı
+```
+CALYPSO Observation Vector (96-dim)
+├── [0-19]   Bot Self State (20)
+│   ├── health, armor, ammo_primary, ammo_secondary
+│   ├── pos_x, pos_y, pos_z
+│   ├── rotation_yaw, rotation_pitch
+│   ├── velocity_x, velocity_y, velocity_z
+│   ├── is_in_cover, is_reloading, is_aiming
+│   ├── time_since_damage
+│   └── current_tier, alarm_level, area_type, combat_phase  ← CALYPSO
+│
+├── [20-55]  Enemy States (3 x 12 = 36)
+│   └── Per enemy:
+│       ├── distance, angle, health_estimate, is_visible
+│       ├── is_in_cover, threat_level, velocity_towards_me
+│       ├── is_aiming_at_me
+│       └── tier, has_shield, shield_hp, weapon_type  ← CALYPSO
+│
+├── [56-75]  Environment State (20)
+│   ├── cover1-4_distance, cover1-4_angle
+│   ├── objective_distance, objective_angle, objective_progress
+│   ├── danger_zone_distance, danger_zone_angle
+│   ├── time_in_combat, enemies_in_range, allies_in_range
+│   └── spider_mine_nearby, boss_phase, shield_enemies_count,
+│       flank_route_available  ← CALYPSO
+│
+├── [76-83]  Team State (8)
+│   └── team_health_avg, team_alive_ratio, nearest_ally_distance,
+│       nearest_ally_angle, team_objective_progress, team_kills,
+│       team_deaths, support_needed
+│
+└── [84-95]  Tactical Info (12)  ← CALYPSO
+    └── suppression_threat, flank_threat, sniper_threat,
+        explosive_threat, shield_wall_active, retreat_path_clear,
+        group_coordination, time_since_alarm, reinforcement_eta,
+        enemy_reload_window, boss_stun_window, player_skill_estimate
+```
+
+---
+
+## 6. Akademik Temelli Tasarım
 
 ### Problem
 Oyun AI geliştirmede genellikle **trial-error** ve **sezgisel** yaklaşımlar kullanılır. Bu, tekrarlanabilirlik ve bilimsel geçerlilik açısından sorunludur.
@@ -194,11 +366,11 @@ Makale Kategorileri:
 ### Kod-Makale Eşleştirmesi
 | Kod Modülü | Referans Makaleler |
 |------------|-------------------|
-| `ppo_agent.py` | Chelarescu (2022), Oh et al. (2022) |
-| `rule_based.py` | Hong et al. (2023), Chen et al. (2021) |
-| `rewards.py` | Almeida et al. (2023) |
+| `calypso_mock_env.py` | Chelarescu (2022), Oh et al. (2022) |
+| `calypso_observation.py` | Almeida et al. (2023) |
+| `train_calypso.py` | Chelarescu (2022) |
+| `difficulty_config.yaml` | game_docx/ dokümanları |
 | `difficulty/manager.py` | Pfau et al. (2020) |
-| `player_tracker.py` | Pfau et al. (2020), Moschovitis (2023) |
 
 ---
 
@@ -206,39 +378,48 @@ Makale Kategorileri:
 
 TÜBİTAK Ar-Ge projesi için ele alınan belirsizlikler:
 
-### 1. Utility AI Skorlama
-**Belirsizlik:** Çoklu faktörlerin optimal ağırlıklandırılması
-**Çözüm:** Consideration-based sistem ve response curve'ler
-**Sonuç:** 8 aksiyon için dinamik skor hesaplama
+### 1. CALYPSO-Özel Observation Space
+**Belirsizlik:** 96-dim observation'ın optimal yapılandırılması
+**Çözüm:** game_docx/ dokümanlarından elde edilen tier/kalkan/silah verileri
+**Sonuç:** Tier-aware, shield-aware observation space
 
-### 2. RL Eğitim Stabilitesi
+### 2. 16 Aksiyonlu Karar Verme
+**Belirsizlik:** Genişletilmiş aksiyon uzayında öğrenme stabilitesi
+**Çözüm:** Kategorize aksiyonlar (Temel/Hareket/Taktik/CALYPSO)
+**Sonuç:** Model CALYPSO-özel aksiyonları (TARGET_WEAK_POINT) kullanmayı öğrendi
+
+### 3. Tier Bazlı Davranış Modelleme
+**Belirsizlik:** Tek model ile farklı tier davranışlarının öğrenilmesi
+**Çözüm:** Tier bilgisi observation'a eklenerek context-aware öğrenme
+**Sonuç:** Tier 1'de FLANK, Tier 2'de COORDINATE_ATTACK dominant
+
+### 4. RL Eğitim Stabilitesi
 **Belirsizlik:** Reward fonksiyonu tasarımı ve hyperparameter seçimi
 **Çözüm:** Chelarescu (2022) referanslı PPO konfigürasyonu
-**Sonuç:** 100K step'te stabil eğitim, 3x reward artışı
+**Sonuç:** Tier 1'de %100, Tier 2'de %50 hayatta kalma
 
-### 3. Gerçek Zamanlı Inference
+### 5. Gerçek Zamanlı Inference
 **Belirsizlik:** Python-UE haberleşme latency'si
 **Çözüm:** gRPC ile optimize edilmiş protokol
 **Sonuç:** <10ms lokal latency
-
-### 4. Adaptif Zorluk Dengesi
-**Belirsizlik:** Oyuncu deneyimini bozmadan zorluk geçişleri
-**Çözüm:** EMA (Exponential Moving Average) ile yumuşak geçiş
-**Sonuç:** Fark edilmez zorluk ayarlama
 
 ---
 
 ## Gelecek Çalışmalar
 
 ### Kısa Vadeli
-- [ ] Daha uzun eğitim (500K-1M steps)
-- [ ] Self-play training
-- [ ] Multi-agent koordinasyon
+- [x] CALYPSO Mock Environment
+- [x] 96-dim Observation Space
+- [x] 16 Aksiyon Sistemi
+- [x] Mock Data Eğitimi
+- [ ] UE5 gRPC Entegrasyonu
+- [ ] Gerçek Oyun Verisi ile Eğitim
 
 ### Orta Vadeli
-- [ ] Curriculum learning entegrasyonu
-- [ ] Imitation learning (oyuncu verilerinden)
-- [ ] Transfer learning (farklı haritalar arası)
+- [ ] Self-play training (Bot vs Bot)
+- [ ] Curriculum learning (Tier 1 → 2 → Boss)
+- [ ] Transfer learning (Mock → Gerçek)
+- [ ] Multi-agent koordinasyon
 
 ### Uzun Vadeli (LLM Entegrasyonu)
 - [ ] LLM tabanlı taktik planlama
@@ -250,23 +431,34 @@ TÜBİTAK Ar-Ge projesi için ele alınan belirsizlikler:
 
 ## Karşılaştırmalı Analiz
 
-| Özellik | Tipik Oyun AI | Akademik Prototip | **Bizim Sistem** |
-|---------|---------------|-------------------|------------------|
+| Özellik | Tipik Oyun AI | Akademik Prototip | **CALYPSO Sistem** |
+|---------|---------------|-------------------|-------------------|
 | AI Tipi | Rule-based | ML-only | **Hibrit** |
 | Öğrenme | Yok | Offline | **Online + Offline** |
-| Zorluk | Manuel | Sabit | **Adaptif** |
-| Framework | Oyun motoru | Python | **Bridge** |
-| Referans | Yok | Var | **18 makale** |
+| Zorluk | Manuel | Sabit | **Tier-based Adaptif** |
+| Observation | Basit | Genel | **96-dim CALYPSO-özel** |
+| Aksiyon | 4-5 | 8-9 | **16 CALYPSO-özel** |
+| Framework | Oyun motoru | Python | **gRPC Bridge** |
+| Referans | Yok | Var | **18 makale + game_docx** |
 | Debug | Zor | Çok zor | **Kolay** |
-| Deployment | Kolay | Zor | **Orta** |
 
 ---
 
 ## Sonuç
 
-Bu proje, oyun yapay zekası alanında **akademik literatür ile endüstriyel uygulama** arasında köprü kurmaktadır. Hibrit mimari, gerçek zamanlı ML inference ve adaptif zorluk sistemi ile Ar-Ge niteliği taşıyan özgün bir çalışmadır.
+Bu proje, CALYPSO oyunu için **akademik literatür ile oyun tasarım dokümanları** arasında köprü kurmaktadır.
+
+Özgün katkılar:
+1. **96-dim CALYPSO-özel observation space**
+2. **16 CALYPSO aksiyonu** (TARGET_WEAK_POINT, COUNTER_SHIELD, vb.)
+3. **Tier bazlı düşman davranış modelleri**
+4. **Mock data ile pre-training** (gerçek veri için hazır)
+5. **Hibrit AI mimarisi** (Rule-based + RL)
+
+Mock data eğitim sonuçları, sistemin CALYPSO oyun mekaniğine adapte olabildiğini göstermektedir. Gerçek UE5 verileri ile fine-tuning yapıldığında optimal performansa ulaşılması beklenmektedir.
 
 ---
 
 *TÜBİTAK 1501 - Sanayi Ar-Ge Projeleri Destekleme Programı*
 *İş Paketi 2: Yapay Zeka, Karakter ve Bot Geliştirme*
+*Ocak 2026*
