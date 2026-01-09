@@ -45,6 +45,7 @@ models/*.zip
 models/*.pt
 models/*.pth
 models/checkpoints/
+models/calypso_*/
 
 # Keep models directory
 !models/.gitkeep

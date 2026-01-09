@@ -23,6 +23,7 @@
 | 5 | [AI Eğitim Gereksinimleri](docs/05_AI_EGITIM_GEREKSINIMLERI.md) | AI modelini eğitmek için firmadan istenen oyun verileri checklist'i |
 | 6 | [Gelecek LLM Fikirleri](docs/06_GELECEK_LLM_FIKIRLERI.md) | İleride eklenebilecek LLM entegrasyonu fikirleri: NPC diyalog, taktik analiz, adaptif hikaye |
 | 7 | [CALYPSO Düşman Sistemi](docs/07_CALYPSO_DUSMAN_SISTEMI.md) | Oyun dokümanlarına uygun Tier bazlı düşman sistemi: Tier 1-5, silahlar, davranışlar, boss |
+| 8 | [Eğitim Sonuçları](docs/08_EGITIM_SONUCLARI.md) | Mock data ile PPO eğitim sonuçları, model karşılaştırmaları, aksiyon analizi |
 
 ---
 
@@ -36,7 +37,7 @@
 │  │ Character   │──│ Tree        │──│ Component   │         │
 │  └─────────────┘  └─────────────┘  └─────────────┘         │
 │         │                                                   │
-│         │ Observation (64-dim) / Action                     │
+│         │ Observation (96-dim) / Action (16)                 │
 │         ▼                                                   │
 │  ┌─────────────────────────────────────────────┐           │
 │  │           gRPC Client (C++)                  │           │
@@ -149,9 +150,11 @@ arge_oyun/
 │   │
 │   ├── environments/           # Gym environments
 │   │   ├── __init__.py
-│   │   ├── mock_env.py         # Test için mock environment
-│   │   ├── ue_bridge_env.py    # Unreal Engine bridge
-│   │   └── observation.py      # Observation space tanımları
+│   │   ├── mock_env.py         # Genel mock environment
+│   │   ├── calypso_mock_env.py # CALYPSO-özel mock (16 aksiyon, Tier bazlı)
+│   │   ├── observation.py      # Genel observation (64-dim)
+│   │   ├── calypso_observation.py # CALYPSO observation (96-dim)
+│   │   └── ue_bridge_env.py    # Unreal Engine bridge
 │   │
 │   ├── training/               # Training scripts
 │   │   ├── __init__.py
@@ -215,14 +218,23 @@ pip install -r requirements.txt
 python -m grpc_tools.protoc -I./protos --python_out=./python_rl_server/server --grpc_python_out=./python_rl_server/server ./protos/bot_service.proto
 ```
 
-### 2. Mock Environment ile Test
+### 2. CALYPSO Mock Environment ile Eğitim
 
 ```bash
-# Mock environment'ta training
-python scripts/train_agent.py --env mock --episodes 1000
+# Tier 1 eğitimi (kolay düşmanlar)
+python python_rl_server/train_calypso.py train --tier 1 --timesteps 100000
+
+# Tier 2 eğitimi (taktiksel düşmanlar)
+python python_rl_server/train_calypso.py train --tier 2 --alarm 2 --timesteps 200000
+
+# Curriculum learning (Tier 1 → 2 → Boss)
+python python_rl_server/train_calypso.py curriculum --timesteps 300000
+
+# Model değerlendirme
+python python_rl_server/train_calypso.py eval models/calypso_tier1_*/best/best_model --episodes 20
 
 # TensorBoard ile izle
-tensorboard --logdir ./logs
+tensorboard --logdir models/calypso_tier1_*/logs
 ```
 
 ### 3. Server Başlatma
@@ -243,17 +255,71 @@ python scripts/start_server.py --port 50051 --mode inference --model ./models/pp
 
 ---
 
-## Zorluk Seviyeleri
+## CALYPSO Tier Sistemi
 
-| Seviye | Türkçe Adı | HP | Accuracy | Reaction | Aggression |
-|--------|------------|-----|----------|----------|------------|
-| 1 | Yolcu | 50 | 20% | 1.0s | 10% |
-| 2 | Mürettebat | 75 | 40% | 0.7s | 30% |
-| 3 | Gemi Muhafızı | 100 | 60% | 0.5s | 50% |
-| 4 | Gemi Polisi | 120 | 70% | 0.4s | 60% |
-| 5 | Koruma | 150 | 80% | 0.3s | 70% |
-| 6 | Sahil Güvenlik | 175 | 85% | 0.25s | 80% |
-| 7 | Özel Kuvvetler | 200 | 95% | 0.15s | 90% |
+| Tier | Düşman Tipi | HP | Accuracy | Silah | Özellik |
+|------|-------------|-----|----------|-------|---------|
+| 1 | Düşük Güvenlik | 100 | %15 | HG/SMG | Panikler, kaçar |
+| 2 | Orta Seviye | 150 | %40 | AR/SG | Taktiksel, koordineli |
+| 2-M | Marksman | 50 | %70 | DMR | Uzak mesafe, hassas |
+| 2-R | Robotic | 250 | - | Patlayıcı | Örümcek mayın, %60 HP |
+| 2-S | Special | 150+500 | %35 | Enerji | Kalkan mekaniği |
+| 5 | Boss (Juggernaut) | 1000 | %90 | Çekiç | Pattern-based, stun |
+
+### Tier Bazlı Spawn
+
+| Alarm | Tier 1 | Tier 2 | Marksman | Spider | Special |
+|-------|--------|--------|----------|--------|---------|
+| 1 | 3-5 / 30s | - | - | - | 1 / 60s |
+| 2 | - | 9 kişi grup | 1-2 / 90s | 2 / 45s | 2 / 60s |
+| 3 | - | Sürekli | 1-2 / 90s | 3 / 45s | 3 / 60s |
+
+---
+
+## Action Space (16 Aksiyon)
+
+| ID | Aksiyon | Açıklama | Kategori |
+|----|---------|----------|----------|
+| 0 | IDLE | Bekle | Temel |
+| 1 | ATTACK | Standart saldırı | Temel |
+| 2 | TAKE_COVER | Sipere gir | Temel |
+| 3 | FLEE | Kaç | Temel |
+| 4 | RELOAD | Mermi doldur | Temel |
+| 5 | PATROL | Devriye gez | Hareket |
+| 6 | INVESTIGATE | Araştır | Hareket |
+| 7 | ADVANCE | Agresif ilerle | Hareket |
+| 8 | FLANK | Yan manevra | Taktik |
+| 9 | SUPPORT | Takım desteği | Taktik |
+| 10 | SUPPRESS | Baskılama ateşi | Taktik |
+| 11 | PEEK_FIRE | Siperden peek-fire | Taktik |
+| 12 | TARGET_WEAK_POINT | Zayıf nokta hedefle | CALYPSO |
+| 13 | EVADE_EXPLOSIVE | Patlayıcıdan kaçın | CALYPSO |
+| 14 | COUNTER_SHIELD | Kalkan karşı manevrası | CALYPSO |
+| 15 | COORDINATE_ATTACK | Koordineli saldırı | CALYPSO |
+
+---
+
+## Observation Space (96-dim)
+
+```
+[0-19]   Bot Self State (20)
+         ├── health, armor, ammo, position, velocity
+         └── tier, alarm_level, area_type, combat_phase
+
+[20-55]  Enemy States (3 x 12 = 36)
+         ├── distance, angle, health, visibility
+         └── tier, has_shield, shield_hp, weapon_type
+
+[56-75]  Environment State (20)
+         ├── cover positions, objective, danger zones
+         └── spider_mine_nearby, boss_phase, flank_route
+
+[76-83]  Team State (8)
+         └── team_health, allies, objectives
+
+[84-95]  Tactical Info (12)
+         └── threats, coordination, stun_windows
+```
 
 ---
 
@@ -317,15 +383,28 @@ rewards = {
 
 ## Geliştirme Yol Haritası
 
-### Mevcut Durum (v0.1)
+### Mevcut Durum (v0.2 - CALYPSO Mock Environment)
 
 | Bileşen | Durum | Açıklama |
 |---------|-------|----------|
-| PPO Agent | ✅ Tamamlandı | Mock environment'ta 100K step eğitildi |
+| CALYPSO Mock Env | ✅ Tamamlandı | 96-dim obs, 16 aksiyon, Tier bazlı |
+| PPO Agent (Tier 1) | ✅ Eğitildi | %100 hayatta kalma, 4 kill/ep |
+| PPO Agent (Tier 2) | ✅ Eğitildi | %50 hayatta kalma, 6 kill/ep |
 | Rule-Based Agent | ✅ Tamamlandı | Utility AI tabanlı karar verme |
-| Mock Environment | ✅ Tamamlandı | Basit savaş simülasyonu |
-| DDA Sistemi | ✅ Tamamlandı | 7 zorluk seviyesi |
+| DDA Sistemi | ✅ Tamamlandı | Tier bazlı zorluk |
 | gRPC Server | ✅ Tamamlandı | UE5 entegrasyonuna hazır |
+
+### Mock Data Eğitim Sonuçları
+
+| Metrik | Tier 1 Model | Tier 2 Model |
+|--------|--------------|--------------|
+| **Reward** | 82.41 | 57.22 |
+| **Kill/Episode** | 4.00 | 6.20 |
+| **Hayatta Kalma** | %100 | %50 |
+| **En Çok Kullanılan** | FLANK (%75) | COORDINATE_ATTACK (%76) |
+| **CALYPSO Özel Aksiyon** | - | TARGET_WEAK_POINT (%15) |
+
+> Model, Tier 2'de kalkanlı düşmanlara karşı TARGET_WEAK_POINT ve COUNTER_SHIELD aksiyonlarını kullanmayı öğrendi.
 
 ### Sonraki Adımlar
 
@@ -362,25 +441,26 @@ rewards = {
 
 Gerçek oyun verileri geldiğinde:
 
-| Metrik | Şu An (Mock) | Hedef (Gerçek Veri) |
-|--------|--------------|---------------------|
-| Reward | 134.60 | 300+ |
-| Win Rate vs Rule-Based | %79 | %90+ |
-| Aksiyon Çeşitliliği | 9 genel | Oyuna özel |
-| Observation Space | 64-dim genel | Oyuna özel optimize |
+| Metrik | Mock Data | Gerçek Veri (Hedef) |
+|--------|-----------|---------------------|
+| Observation | 96-dim simüle | UE5'ten gerçek sensör |
+| Reward (Tier 1) | 82.41 | 150+ |
+| Reward (Tier 2) | 57.22 | 100+ |
+| Hayatta Kalma (Tier 2) | %50 | %80+ |
+| Aksiyon Çeşitliliği | 4-5 dominant | 10+ aktif |
 
-> **Not:** AI modeli, CALYPSO'nun gerçek oyun mekanikleri, harita yapısı ve silah sistemine göre yeniden eğitilecek ve optimal performansa ulaşana kadar iteratif olarak geliştirilecektir.
+> **Transfer Learning:** Mock data ile pre-train edilen model, gerçek UE5 verileriyle fine-tune edilecek. Temel davranışlar (FLANK, COVER, ATTACK) zaten öğrenildi.
 
 ### Firmadan Beklenen Veriler
 
-Aşağıdaki bileşenler firma tarafından sağlanacak oyun verilerine göre güncellenecektir:
-
-| Bileşen | Mevcut | Güncellenecek |
-|---------|--------|---------------|
-| **Aksiyon Listesi** | 9 genel aksiyon (IDLE, ATTACK, COVER...) | CALYPSO'ya özel aksiyonlar |
-| **Observation Space** | 64-dim genel vektör | Oyun mekaniğine özel sensör verileri |
-| **Reward Fonksiyonu** | Genel FPS ödülleri | CALYPSO objektiflerine göre ağırlıklar |
-| **Eğitim Sonuçları** | Mock environment test | Gerçek oyun verileriyle eğitim metrikleri |
+| Bileşen | Durum | Detay |
+|---------|-------|-------|
+| **Düşman Dokümanları** | ✅ Alındı | Tier 1-5, silahlar, davranışlar |
+| **Aksiyon Listesi** | ✅ Tamamlandı | 16 CALYPSO-özel aksiyon |
+| **Observation Space** | ✅ Tamamlandı | 96-dim CALYPSO-özel |
+| **Mock Environment** | ✅ Tamamlandı | Tier bazlı simülasyon |
+| **UE5 Entegrasyonu** | ⏳ Bekliyor | gRPC client kurulumu |
+| **Gerçek Oyun Verisi** | ⏳ Bekliyor | UE5'ten observation stream |
 
 Detaylı gereksinim listesi için: [AI Eğitim Gereksinimleri](docs/05_AI_EGITIM_GEREKSINIMLERI.md)
 
@@ -403,4 +483,4 @@ Tüm hakları MB Oyun Yazılım ve Pazarlama A.Ş.'ye aittir.
 
 ---
 
-*Son Güncelleme: Ocak 2025*
+*Son Güncelleme: Ocak 2026*
