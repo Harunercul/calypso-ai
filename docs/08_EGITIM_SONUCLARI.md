@@ -3,6 +3,26 @@
 
 ---
 
+## Veri Kaynağı
+
+Bu eğitim, firma tarafından sağlanan resmi oyun tasarım dokümanlarına dayanmaktadır:
+
+```
+game_docx/
+├── CP-Tier 1 - düşük güvenlik.pdf    → Tier 1 düşman davranışları
+├── CP-Tier 2 - Orta Seviye.pdf       → Tier 2 taktiksel davranışlar
+├── CP-Tier 2 - Robotic.pdf           → Örümcek mayın mekanikleri
+├── CP-Tier 2 - Special.pdf           → Kalkan sistemleri
+└── CP-Tier 5 - Bosslar.pdf           → Juggernaut boss pattern'leri
+```
+
+Bu dokümanlardan elde edilen veriler:
+- `configs/difficulty_config.yaml` → Düşman istatistikleri, silah verileri
+- `calypso_mock_env.py` → Davranış döngüleri, spawn kuralları
+- `calypso_observation.py` → Tier/silah/kalkan observation'ları
+
+---
+
 ## Eğitim Özeti
 
 | Parametre | Değer |

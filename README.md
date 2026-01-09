@@ -12,6 +12,22 @@
 
 ---
 
+## Oyun Verileri (Kaynak)
+
+AI sistemi, firma tarafından sağlanan resmi oyun tasarım dokümanlarına dayanarak geliştirilmiştir:
+
+| Dosya | İçerik |
+|-------|--------|
+| [CP-Tier 1](game_docx/CP-Tier%201%20-%20düşük%20güvenlik-070126-111547.pdf) | Düşük Güvenlik - Güvenlik görevlileri, panik davranışları |
+| [CP-Tier 2 Orta](game_docx/CP-Tier%202%20-%20Orta%20Seviye%20Düşmanlar-070126-111638%20(1).pdf) | Orta Seviye - AR/SG birimleri, taktiksel davranışlar |
+| [CP-Tier 2 Robotic](game_docx/CP-Tier%202%20-%20Robotic-070126-111621.pdf) | Örümcek Mayın - Patlayıcı robotlar |
+| [CP-Tier 2 Special](game_docx/CP-Tier%202%20-%20Special-070126-111601.pdf) | Kalkanlı Birimler - Plasma/Iron-Clad kalkanları |
+| [CP-Tier 5 Boss](game_docx/CP-Tier%205%20-%20Bosslar-070126-111659.pdf) | Juggernaut Boss - Pattern-based saldırılar |
+
+> Bu dokümanlardan elde edilen veriler `configs/difficulty_config.yaml` ve `calypso_mock_env.py` dosyalarına aktarılmıştır.
+
+---
+
 ## Dokümantasyon
 
 | # | Dosya | Açıklama |
